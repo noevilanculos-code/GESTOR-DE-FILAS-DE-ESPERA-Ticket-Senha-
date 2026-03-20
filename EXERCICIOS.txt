@@ -1,0 +1,332 @@
+============================================================
+  GESTOR DE FILAS DE ESPERA  —  EXERCICIOS PRATICOS
+  Baseados no programa fila_espera.cpp  |  C++17
+============================================================
+
+Cada exercicio e classificado por nivel de dificuldade:
+
+  [F] Facil       — adicionar ou alterar algo simples
+  [M] Medio       — criar nova funcionalidade
+  [D] Dificil     — reestruturar ou expandir o sistema
+
+
+------------------------------------------------------------
+  NIVEL 1 — FACIL
+------------------------------------------------------------
+
+EXERCICIO 1.1 — Novo servico                            [F]
+------------------------------------------------------------
+Adiciona um quinto servico chamado "Saude e Bem-Estar"
+com a cor amarelo escuro (\033[33m).
+
+Passos:
+  - Altera NUM_SERVICOS de 4 para 5
+  - Adiciona a string ao array SERVICOS
+  - Adiciona o codigo de cor ao array COR_SERV
+
+Objectivo: perceber como os arrays estaticos e o loop
+de apresentacao funcionam juntos.
+
+
+EXERCICIO 1.2 — Limite da fila configuravel            [F]
+------------------------------------------------------------
+Actualmente a fila aceita ate 100 clientes por sessao.
+Transforma esse valor num atributo privado de GestorFila
+que pode ser passado no construtor.
+
+Exemplo de uso:
+  GestorFila fila("atendimentos.txt", 50);
+
+Passos:
+  - Adiciona int max_fila ao construtor
+  - Substitui a constante 100 pelo atributo
+  - Exibe o limite no cabecalho do menu
+
+Objectivo: praticar construtores com multiplos parametros.
+
+
+EXERCICIO 1.3 — Cor da senha no bilhete               [F]
+------------------------------------------------------------
+Actualmente o bilhete exibe o numero da senha em amarelo.
+Altera o programa para que a cor do numero seja a mesma
+cor do servico escolhido pelo cliente.
+
+Exemplo: senha de Secretaria -> numero em ciano brilhante.
+
+Passos:
+  - Em retirar_senha(), apos definir s.servico,
+    chama cor_servico(s.servico) e guarda o resultado
+  - Substitui o codigo de cor fixo no bilhete
+
+Objectivo: usar o metodo cor_servico() ja existente.
+
+
+EXERCICIO 1.4 — Mensagem personalizada por servico    [F]
+------------------------------------------------------------
+Quando uma senha e chamada (opcao 2), exibe uma mensagem
+diferente consoante o servico. Exemplos:
+
+  Tesouraria       -> "Dirija-se ao balcao de pagamentos."
+  Secretaria       -> "Dirija-se a recepcao principal."
+  Recursos Humanos -> "Siga para o 2o andar, sala 201."
+  Atendimento Geral-> "Qualquer balcao disponivel."
+
+Passos:
+  - Cria um array MENSAGEM_SERV[] com as mensagens
+  - Em chamar_proximo(), apos exibir os dados da senha,
+    percorre SERVICOS[] para encontrar o indice
+    e imprime MENSAGEM_SERV[i]
+
+Objectivo: trabalhar com arrays paralelos.
+
+
+------------------------------------------------------------
+  NIVEL 2 — MEDIO
+------------------------------------------------------------
+
+EXERCICIO 2.1 — Tempo de espera                       [M]
+------------------------------------------------------------
+Calcula e exibe o tempo de espera de cada cliente
+quando a sua senha e chamada.
+
+Passos:
+  - Adiciona hora_saida como atributo da class Senha
+    (string, inicialmente vazia)
+  - Em chamar_proximo(), grava a hora actual em hora_saida
+  - Cria uma funcao diferenca_minutos(hora1, hora2)
+    que converte "HH:MM" para minutos desde meia-noite
+    e retorna a diferenca
+  - Exibe "Tempo de espera: X minutos" no banner de chamada
+
+Dica para converter:
+  int para_minutos(const std::string& h) {
+      return std::stoi(h.substr(0,2)) * 60
+           + std::stoi(h.substr(3,2));
+  }
+
+Objectivo: manipulacao de strings numericas, aritmetica
+de tempo simples.
+
+
+EXERCICIO 2.2 — Prioridade para idosos                [M]
+------------------------------------------------------------
+Adiciona um campo booleano "prioritario" na class Senha.
+Clientes prioritarios sao colocados a frente dos normais
+na fila, mas atras de outros prioritarios (FIFO separado).
+
+Passos:
+  - Adiciona bool prioritario a class Senha
+  - Em retirar_senha(), pergunta "Cliente prioritario? (s/n)"
+  - Altera a logica de chamar_proximo():
+      1. Procura primeiro senha prioritaria nao atendida
+      2. Se nao existir, chama a normal seguinte
+  - Na listagem da fila, marca clientes prioritarios
+    com "[P]" em amarelo
+
+Objectivo: alterar a logica FIFO para suportar prioridades.
+
+
+EXERCICIO 2.3 — Cancelar senha                        [M]
+------------------------------------------------------------
+Adiciona a opcao [7] ao menu: "Cancelar senha".
+Permite cancelar uma senha que ainda esta em espera,
+dado o seu numero.
+
+Passos:
+  - Adiciona bool cancelado a class Senha
+  - Cria metodo cancelar_senha(int numero) em GestorFila:
+      percorre o vector, encontra a senha pelo numero,
+      verifica que nao esta atendida nem cancelada,
+      marca cancelado = true
+  - Actualiza mostrar_fila() para ignorar canceladas
+  - Actualiza em_espera() para nao contar canceladas
+  - Adiciona caso 7 no switch do main()
+
+Objectivo: filtrar elementos num vector sem os remover.
+
+
+EXERCICIO 2.4 — Guardar e carregar sessao             [M]
+------------------------------------------------------------
+Quando o programa termina (opcao 0), grava o estado
+actual da fila num ficheiro sessao.bin ou sessao.txt.
+Na proxima execucao, pergunta ao utilizador se quer
+retomar a sessao anterior.
+
+Passos (versao texto):
+  - Cria metodo guardar_sessao() em GestorFila:
+      abre ofstream("sessao.txt")
+      escreve cada Senha como uma linha CSV:
+      numero;nome;servico;hora_entrada;atendido
+  - Cria metodo carregar_sessao():
+      abre ifstream("sessao.txt")
+      le linha a linha, faz parse com getline e ';'
+      reconstroi o vector de Senha
+      actualiza frente e contador
+  - Em main(), antes do loop, verifica se sessao.txt
+    existe e pergunta "Retomar sessao anterior? (s/n)"
+
+Objectivo: serializar e deserializar objectos para ficheiro.
+
+
+EXERCICIO 2.5 — Relatorio por periodo                 [M]
+------------------------------------------------------------
+Adiciona a opcao [8]: "Relatorio do dia".
+Le o ficheiro atendimentos.txt e calcula:
+  - Total de atendimentos no dia actual
+  - Servico mais solicitado
+  - Tempo medio de espera (entrada -> saida)
+  - Hora de pico (hora com mais atendimentos)
+
+Passos:
+  - Cria funcao relatorio_do_dia() em GestorFila
+  - Le o log linha a linha com ifstream
+  - Filtra linhas com a data de hoje
+  - Faz parse dos campos separados por "|"
+  - Calcula as metricas e exibe com UI::prop()
+
+Objectivo: parsing de ficheiros de texto estruturados.
+
+
+------------------------------------------------------------
+  NIVEL 3 — DIFICIL
+------------------------------------------------------------
+
+EXERCICIO 3.1 — Multiplos guiches                     [D]
+------------------------------------------------------------
+Actualmente existe apenas um guiche de atendimento.
+Altera o sistema para suportar N guiches em simultaneo.
+
+Passos:
+  - Cria class Guiche com atributos:
+      int numero, bool ocupado, Senha* senha_actual
+  - Adiciona vector<Guiche> guiches a GestorFila
+  - Altera chamar_proximo() para receber int num_guiche
+  - A opcao 2 do menu pergunta "Guiche numero: "
+  - O estado do cabecalho mostra quais guiches estao
+    ocupados e qual senha estao a atender
+  - O log passa a incluir o numero do guiche
+
+Objectivo: composicao de classes, gestao de multiplos estados.
+
+
+EXERCICIO 3.2 — Fila por servico                      [D]
+------------------------------------------------------------
+Em vez de uma fila unica, cada servico tem a sua propria
+fila independente.
+
+Passos:
+  - Substitui vector<Senha> por:
+      std::map<std::string, std::vector<Senha>> filas
+  - Cada servico tem o seu proprio indice frente:
+      std::map<std::string, int> frentes
+  - retirar_senha() adiciona ao vector do servico correcto
+  - chamar_proximo() recebe o nome do servico e avanca
+    apenas a fila desse servico
+  - mostrar_fila() lista todas as filas separadamente
+  - As estatisticas mostram o estado por servico
+
+Objectivo: std::map, indices independentes por chave.
+
+
+EXERCICIO 3.3 — Interface com setas do teclado        [D]
+------------------------------------------------------------
+Substitui a navegacao por numero pela navegacao com
+as teclas de seta do teclado, destacando a opcao actual.
+
+Passos (Linux/macOS):
+  - Usa termios.h para ler teclas sem pressionar ENTER:
+      tcgetattr / tcsetattr com ICANON e ECHO desligados
+  - Le sequencias de escape das setas:
+      \033[A = cima, \033[B = baixo, \033[C = direita
+  - Guarda int opcao_actual e redesenha o menu a cada tecla
+  - A opcao seleccionada aparece com fundo colorido:
+      BG_AZUL + texto branco + negrito
+  - ENTER confirma a seleccao
+
+Nota para Windows: usa _getch() de <conio.h> em vez
+de termios. Teclas especiais retornam 0xE0 seguido
+do codigo da seta.
+
+Objectivo: I/O de terminal de baixo nivel, redesenho
+do ecra em tempo real.
+
+
+EXERCICIO 3.4 — Exportar relatorio em HTML            [D]
+------------------------------------------------------------
+Adiciona opcao [9]: "Exportar relatorio HTML".
+Gera um ficheiro relatorio.html com uma tabela formatada
+de todos os atendimentos da sessao actual.
+
+Passos:
+  - Cria metodo exportar_html() em GestorFila
+  - Abre ofstream("relatorio.html")
+  - Escreve cabecalho HTML com estilos CSS inline:
+      fundo escuro, tabela com bordas, cores por servico
+  - Para cada Senha atendida, escreve uma linha <tr>
+    com numero, nome, servico, hora, duracao
+  - Inclui linha de totais no rodape da tabela
+  - Fecha o ficheiro e informa o utilizador
+
+Estrutura HTML sugerida:
+  <table>
+    <thead><tr><th>Senha</th><th>Nome</th>...</tr></thead>
+    <tbody>
+      <tr><td>001</td><td>Ana Silva</td>...</tr>
+    </tbody>
+    <tfoot><tr><td colspan="5">Total: N</td></tr></tfoot>
+  </table>
+
+Objectivo: geracao de ficheiros HTML com ofstream,
+formatacao de strings em C++.
+
+
+------------------------------------------------------------
+  DESAFIO FINAL
+------------------------------------------------------------
+
+DESAFIO — Sistema completo em rede local             [D+++]
+------------------------------------------------------------
+Transforma o programa num servidor simples onde:
+  - O FUNCIONARIO corre o programa normal no seu PC
+  - Os CLIENTES ligam-se via TCP e retiram senhas
+    a partir dos seus proprios terminais
+
+Tecnologia sugerida: BSD Sockets (POSIX) ou Winsock2
+
+Passos gerais:
+  - Cria class Servidor com socket TCP na porta 9000
+  - Cada cliente que liga recebe o menu de "retirar senha"
+  - O cliente envia nome + servico, o servidor emite senha
+    e envia o numero de volta ao cliente
+  - O funcionario ve a fila em tempo real no seu terminal
+  - Usa std::thread para cada ligacao de cliente
+
+Objectivo: introducao a programacao de redes e
+concorrencia com threads em C++.
+
+
+============================================================
+  DICAS GERAIS
+============================================================
+
+  1. Compila sempre com -Wall -Wextra para ver avisos:
+       g++ -std=c++17 -Wall -Wextra -o fila fila_espera.cpp
+
+  2. Testa cada exercicio de forma isolada antes de
+     integrar com o resto do programa.
+
+  3. Usa o depurador (gdb ou lldb) para acompanhar o
+     valor de frente e do vector passo a passo:
+       g++ -std=c++17 -g -o fila fila_espera.cpp
+       gdb ./fila
+
+  4. Para os exercicios de ficheiros, apaga o
+     atendimentos.txt entre testes para comecar limpo.
+
+  5. Os exercicios de nivel 3 podem ser feitos por etapas:
+     comeca por um caso simples e vai adicionando.
+
+
+============================================================
+  FIM DOS EXERCICIOS
+============================================================
