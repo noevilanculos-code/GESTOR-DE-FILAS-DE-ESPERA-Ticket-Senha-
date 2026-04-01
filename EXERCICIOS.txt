@@ -1,0 +1,313 @@
+============================================================
+  GESTOR DE FILAS DE ESPERA  —  EXERCICIOS PRATICOS
+  Baseados em fila_simples.cpp  |  C++11
+============================================================
+
+Niveis:
+  [F] Facil   — alterar ou adicionar algo pequeno
+  [M] Medio   — criar uma funcionalidade nova
+  [D] Dificil — reestruturar ou expandir o sistema
+
+
+------------------------------------------------------------
+  NIVEL 1 — FACIL
+------------------------------------------------------------
+
+EXERCICIO 1.1 — Novo servico                            [F]
+------------------------------------------------------------
+Adiciona um quinto servico chamado "Saude".
+
+O que alterar:
+  - N_SERV de 4 para 5
+  - Adiciona "Saude" ao array SERVICOS[]
+
+Resultado esperado:
+  [1] Tesouraria
+  [2] Secretaria
+  [3] Recursos Humanos
+  [4] Atendimento Geral
+  [5] Saude
+
+
+EXERCICIO 1.2 — Numero da senha com zeros              [F]
+------------------------------------------------------------
+Actualmente a senha aparece como "1", "2", "3".
+Faz com que apareça sempre com 3 digitos: "001", "002".
+
+Dica: usa a funcao printf com o formato %03d
+  printf("%03d", senhas[total - 1]);
+
+Ou com cout:
+  cout << setw(3) << setfill('0') << senhas[total - 1];
+  (requer #include <iomanip>)
+
+
+EXERCICIO 1.3 — Mensagem por servico                   [F]
+------------------------------------------------------------
+Quando uma senha e chamada (opcao 2), mostra uma mensagem
+diferente conforme o servico. Exemplo:
+
+  Tesouraria       -> "Dirija-se ao balcao 1."
+  Secretaria       -> "Dirija-se a recepcao."
+  Recursos Humanos -> "Siga para o 2o andar."
+  Atendimento Geral-> "Qualquer balcao livre."
+
+O que adicionar:
+  string MENSAGENS[N_SERV] = { "...", "...", "...", "..." };
+
+  Em chamar_proximo(), apos mostrar o servico:
+    for (int i = 0; i < N_SERV; i++)
+        if (servico[frente] == SERVICOS[i])
+            cout << "Indicacao: " << MENSAGENS[i] << "\n";
+
+
+EXERCICIO 1.4 — Confirmacao antes de sair              [F]
+------------------------------------------------------------
+Quando o utilizador escolhe 0 (Sair), pede confirmacao:
+
+  Tem a certeza? (s/n): 
+
+Se responder 's', termina. Se responder 'n', volta ao menu.
+
+O que alterar no main():
+  case 0:
+      char conf;
+      cout << "Tem a certeza? (s/n): ";
+      cin >> conf;
+      cin.ignore();
+      if (conf == 's') op = 0;
+      else             op = -1;
+      break;
+
+
+------------------------------------------------------------
+  NIVEL 2 — MEDIO
+------------------------------------------------------------
+
+EXERCICIO 2.1 — Tempo de espera                        [M]
+------------------------------------------------------------
+Quando uma senha e chamada, calcula e mostra quantos
+minutos o cliente esperou.
+
+O que fazer:
+  1. Cria uma funcao que converte "HH:MM" para minutos:
+       int para_minutos(string h) {
+           int horas  = (h[0]-'0')*10 + (h[1]-'0');
+           int mins   = (h[3]-'0')*10 + (h[4]-'0');
+           return horas * 60 + mins;
+       }
+
+  2. Em chamar_proximo(), calcula a diferenca:
+       int espera = para_minutos(hora_agora())
+                  - para_minutos(hora_entrada[frente]);
+       cout << "Tempo de espera: " << espera << " minutos\n";
+
+  3. Grava tambem no log.
+
+
+EXERCICIO 2.2 — Cancelar senha                         [M]
+------------------------------------------------------------
+Adiciona a opcao [7] Cancelar senha ao menu.
+
+O que fazer:
+  1. Adiciona um novo vector: bool cancelado[MAX]
+     (inicializa tudo a false)
+
+  2. Cria a funcao cancelar_senha():
+       cabecalho();
+       cout << "Numero da senha a cancelar: ";
+       int num; cin >> num; cin.ignore();
+
+       for (int i = frente; i < total; i++) {
+           if (senhas[i] == num && !atendido[i]
+                                && !cancelado[i]) {
+               cancelado[i] = true;
+               cout << "Senha " << num << " cancelada.\n";
+               pausar(); return;
+           }
+       }
+       cout << "Senha nao encontrada.\n";
+       pausar();
+
+  3. Actualiza ver_fila() e em_espera() para ignorar
+     senhas com cancelado[i] == true.
+
+  4. Actualiza chamar_proximo() para saltar canceladas:
+       while (frente < total &&
+              (atendido[frente] || cancelado[frente]))
+           frente++;
+
+
+EXERCICIO 2.3 — Pesquisar cliente                      [M]
+------------------------------------------------------------
+Adiciona a opcao [8] Pesquisar pelo nome.
+
+O que fazer:
+  1. Cria a funcao pesquisar():
+       cabecalho();
+       cout << "Nome a pesquisar: ";
+       string termo; getline(cin, termo);
+
+       bool encontrou = false;
+       for (int i = 0; i < total; i++) {
+           if (nomes[i].find(termo) != string::npos) {
+               cout << "[" << senhas[i] << "] "
+                    << nomes[i] << " - " << servico[i]
+                    << " - "
+                    << (atendido[i] ? "Atendido"
+                                    : "Em espera")
+                    << "\n";
+               encontrou = true;
+           }
+       }
+       if (!encontrou) cout << "Nenhum resultado.\n";
+       pausar();
+
+  Nota: string::npos e o valor retornado por find()
+  quando nao encontra nada.
+
+
+EXERCICIO 2.4 — Guardar sessao                         [M]
+------------------------------------------------------------
+Quando o programa termina, grava o estado actual da fila
+num ficheiro sessao.txt. Na proxima execucao, pergunta
+se o utilizador quer retomar.
+
+Formato de cada linha do ficheiro:
+  NUMERO;NOME;SERVICO;HORA;ATENDIDO
+
+Exemplo:
+  1;Ana Silva;Tesouraria;14:10;0
+  2;Joao Costa;Secretaria;14:11;1
+
+Funcoes a criar:
+
+  void guardar_sessao() {
+      ofstream f("sessao.txt");
+      for (int i = 0; i < total; i++)
+          f << senhas[i]      << ";"
+            << nomes[i]       << ";"
+            << servico[i]     << ";"
+            << hora_entrada[i]<< ";"
+            << atendido[i]    << "\n";
+  }
+
+  void carregar_sessao() {
+      ifstream f("sessao.txt");
+      if (!f) return;
+      string linha;
+      while (getline(f, linha) && total < MAX) {
+          // faz parse da linha separada por ';'
+          // preenche os vetores e actualiza total,
+          // frente e contador
+      }
+  }
+
+No main(), antes do loop, pergunta:
+  "Retomar sessao anterior? (s/n): "
+  Se 's', chama carregar_sessao().
+No case 0, chama guardar_sessao() antes de terminar.
+
+
+------------------------------------------------------------
+  NIVEL 3 — DIFICIL
+------------------------------------------------------------
+
+EXERCICIO 3.1 — Multiplos guiches                      [D]
+------------------------------------------------------------
+Suporta N guiches em simultaneo.
+
+O que adicionar:
+  const int N_GUICHES = 3;
+  int guiche_senha[N_GUICHES];    // senha actual em cada
+  bool guiche_ocupado[N_GUICHES]; // true = a atender
+
+Alteracoes:
+  - chamar_proximo() recebe o numero do guiche
+  - A opcao 2 pergunta "Guiche numero (1-3): "
+  - cabecalho() mostra o estado de cada guiche
+  - O log inclui o numero do guiche
+
+
+EXERCICIO 3.2 — Fila por servico                       [D]
+------------------------------------------------------------
+Em vez de uma fila unica, cada servico tem a sua propria
+fila independente com o seu indice frente.
+
+O que fazer:
+  - Cria vetores separados por servico:
+      int    s_senhas[N_SERV][MAX]
+      string s_nomes[N_SERV][MAX]
+      bool   s_atendido[N_SERV][MAX]
+      int    s_total[N_SERV]
+      int    s_frente[N_SERV]
+
+  - retirar_senha() adiciona ao vector do servico correcto
+  - chamar_proximo() pergunta qual servico a chamar
+  - ver_fila() lista todas as filas separadas por servico
+  - estatisticas() mostra o total de cada fila
+
+
+EXERCICIO 3.3 — Exportar relatorio                     [D]
+------------------------------------------------------------
+Adiciona opcao [9] que gera um ficheiro relatorio.html
+com uma tabela de todos os atendimentos da sessao.
+
+Estrutura do ficheiro gerado:
+  <html>
+  <body>
+  <h1>Relatorio de Atendimentos</h1>
+  <table border="1">
+    <tr><th>Senha</th><th>Nome</th><th>Servico</th>
+        <th>Hora entrada</th></tr>
+    <tr><td>001</td><td>Ana</td>...</tr>
+  </table>
+  </body>
+  </html>
+
+Funcao a criar:
+  void exportar_html() {
+      ofstream f("relatorio.html");
+      f << "<html><body>\n";
+      f << "<h1>Relatorio</h1>\n";
+      f << "<table border='1'>\n";
+      f << "<tr><th>Senha</th><th>Nome</th>"
+           "<th>Servico</th><th>Hora</th></tr>\n";
+      for (int i = 0; i < total; i++) {
+          if (atendido[i])
+              f << "<tr><td>" << senhas[i] << "</td>"
+                << "<td>" << nomes[i]     << "</td>"
+                << "<td>" << servico[i]   << "</td>"
+                << "<td>" << hora_entrada[i] << "</td>"
+                << "</tr>\n";
+      }
+      f << "</table></body></html>\n";
+      cout << "Relatorio gerado: relatorio.html\n";
+  }
+
+
+------------------------------------------------------------
+  DICAS GERAIS
+------------------------------------------------------------
+
+  1. Compila sempre com -std=c++11 no Dev-C++:
+     Tools -> Compiler Options -> -std=c++11
+
+  2. Testa cada exercicio separadamente antes de
+     juntar com o resto do programa.
+
+  3. Quando tiveres um erro, le a mensagem com atencao:
+     - indica o numero da linha
+     - indica o que esta errado
+     Resolve sempre o primeiro erro antes dos outros.
+
+  4. Para testar o log, apaga o atendimentos.txt entre
+     testes para comecar com um ficheiro limpo.
+
+  5. Usa comentarios para explicar o que cada parte faz:
+     // Este ciclo percorre todos os clientes da fila
+
+
+============================================================
+  FIM DOS EXERCICIOS
+============================================================

@@ -1,0 +1,250 @@
+============================================================
+  GESTOR DE FILAS DE ESPERA  —  DOCUMENTACAO TECNICA
+  Versao Simples  |  C++11  |  2026
+============================================================
+
+
+------------------------------------------------------------
+  1. INTRODUCAO
+------------------------------------------------------------
+
+Programa de terminal que simula um sistema de gestao de
+senhas de atendimento, como os usados em bancos, hospitais
+e reparticoes publicas.
+
+Dois perfis de utilizador:
+  - CLIENTE     : retira uma senha com nome e servico
+  - FUNCIONARIO : chama a proxima senha da fila
+
+O ecra e limpo no inicio de cada operacao. Os contadores
+(total, atendidos, em espera) aparecem sempre no topo.
+Os atendimentos sao gravados no ficheiro atendimentos.txt.
+
+
+------------------------------------------------------------
+  2. ESTRUTURA DO CODIGO
+------------------------------------------------------------
+
+O programa e composto por funcoes globais simples, sem
+classes nem namespaces. Os dados vivem em vetores globais.
+
+Organizacao:
+
+  Vetores globais        dados da fila
+  Utilitarios            hora_agora, data_hoje, pausar,
+                         em_espera, cabecalho, limpar
+  Funcoes de menu        retirar_senha, chamar_proximo,
+                         ver_fila, ver_historico,
+                         ver_log, estatisticas
+  main()                 loop do menu
+
+
+------------------------------------------------------------
+  3. VARIAVEIS GLOBAIS
+------------------------------------------------------------
+
+  int    senhas[100]        numero sequencial de cada senha
+  string nomes[100]         nome do cliente
+  string servico[100]       servico escolhido
+  string hora_entrada[100]  hora em que a senha foi emitida
+  bool   atendido[100]      false = em espera, true = feito
+
+  int total    = 0          quantas senhas foram emitidas
+  int frente   = 0          indice do proximo a atender
+  int contador = 1          numero da proxima senha a emitir
+
+  string SERVICOS[4]        lista dos servicos disponiveis
+
+Estes cinco vetores sao paralelos: o indice 0 de cada um
+refere-se sempre ao mesmo cliente. Por exemplo:
+
+  senhas[2]      = 3
+  nomes[2]       = "Ana Silva"
+  servico[2]     = "Tesouraria"
+  hora_entrada[2]= "14:10"
+  atendido[2]    = false
+
+Significa que o terceiro cliente emitiu a senha numero 3,
+chama-se Ana Silva, pediu Tesouraria as 14:10 e ainda
+nao foi atendido.
+
+
+------------------------------------------------------------
+  4. LOGICA FIFO
+------------------------------------------------------------
+
+FIFO = First In, First Out.
+O primeiro a retirar senha e o primeiro a ser chamado.
+
+Implementacao com dois indices:
+
+  total   : aponta para a proxima posicao livre no vector
+  frente  : aponta para o proximo cliente a ser chamado
+
+Exemplo com 4 clientes, 2 ja atendidos:
+
+  indice:   [0]       [1]       [2]       [3]
+  nomes:    "Ana"     "Joao"    "Maria"   "Pedro"
+  atendido: true      true      false     false
+                                ^
+                             frente = 2
+                             total  = 4
+
+Quando chamar_proximo() e chamado:
+  1. Avanca frente sobre os ja marcados (while)
+  2. Se frente >= total: fila vazia
+  3. Marca atendido[frente] = true
+  4. Mostra os dados do cliente
+  5. Grava no ficheiro de log
+  6. frente++
+
+Vantagem: nao e necessario deslocar elementos no vector.
+Cada chamada custa apenas O(1) em tempo de execucao.
+
+
+------------------------------------------------------------
+  5. DESCRICAO DAS FUNCOES
+------------------------------------------------------------
+
+  limpar()
+    Executa system("cls") para limpar o ecra no Windows.
+
+  hora_agora() -> string
+    Le a hora do sistema com time(NULL) e formata como
+    "HH:MM" usando strftime.
+
+  data_hoje() -> string
+    Le a data do sistema com time(NULL) e formata como
+    "DD/MM/AAAA" usando strftime.
+
+  pausar()
+    Exibe "Prima ENTER para continuar..." e aguarda.
+    Usa cin.ignore() para consumir o caracter de nova linha.
+
+  em_espera() -> int
+    Percorre o vector de frente ate total e conta quantos
+    tem atendido == false. Retorna esse numero.
+
+  cabecalho()
+    Chama limpar(), depois imprime o titulo, data, hora
+    e os contadores (total, atendidos, em espera).
+    E chamada no inicio de cada funcao de menu.
+
+  retirar_senha()
+    Valida se ha espaco (total < MAX).
+    Grava numero, hora e atendido=false nos vetores.
+    Le o nome com getline (aceita espacos).
+    Mostra os servicos numerados e le a opcao.
+    Incrementa total e contador.
+    Mostra confirmacao com os dados da senha.
+
+  chamar_proximo()
+    Avanca frente sobre atendidos com while.
+    Marca atendido[frente] = true.
+    Mostra dados do cliente.
+    Abre atendimentos.txt em append e grava uma linha.
+    Incrementa frente.
+
+  ver_fila()
+    Itera de frente ate total.
+    Mostra apenas os que tem atendido == false.
+    Marca o primeiro com "<< PROXIMO".
+
+  ver_historico()
+    Itera de 0 ate total.
+    Mostra apenas os que tem atendido == true.
+
+  ver_log()
+    Abre atendimentos.txt com ifstream.
+    Le linha a linha com getline e imprime.
+
+  estatisticas()
+    Mostra totais globais.
+    Para cada servico, percorre o vector e conta quantos
+    o escolheram.
+
+  main()
+    Loop do-while que mostra o menu e chama a funcao
+    correspondente com switch. Termina quando op == 0.
+
+
+------------------------------------------------------------
+  6. FICHEIRO DE LOG
+------------------------------------------------------------
+
+Nome: atendimentos.txt
+Modo: append (ios::app) — nunca apaga registos anteriores
+
+Formato de cada linha:
+  [DD/MM/AAAA] Senha: N | Entrada: HH:MM | Saida: HH:MM
+  | Cliente: NOME | Servico: SERVICO
+
+Exemplo:
+  [25/03/2026] Senha: 1 | Entrada: 14:10 | Saida: 14:18
+  | Cliente: Ana Silva | Servico: Tesouraria
+
+O ficheiro e criado automaticamente quando o primeiro
+atendimento e registado. Se nao existir, a opcao 5
+informa o utilizador.
+
+
+------------------------------------------------------------
+  7. BIBLIOTECAS UTILIZADAS
+------------------------------------------------------------
+
+  #include <iostream>
+    cout e cin — escrever no ecra e ler do teclado.
+
+  #include <fstream>
+    ofstream para gravar o log.
+    ifstream para ler o log.
+
+  #include <string>
+    Tipo string — nomes, servicos, horas.
+    getline() para ler texto com espacos.
+
+  #include <ctime>
+    time(NULL)    — segundos desde 1970
+    localtime()   — converte para hora local
+    strftime()    — formata data e hora como texto
+
+
+------------------------------------------------------------
+  8. COMPILACAO
+------------------------------------------------------------
+
+  Dev-C++ (Windows):
+    Tools -> Compiler Options -> adicionar: -std=c++11
+    Compile: F9
+
+  Linha de comandos (Windows / Linux / macOS):
+    g++ -std=c++11 -o fila fila_simples.cpp
+
+  Nota: NULL e usado em vez de nullptr para compatibilidade
+  com versoes antigas do GCC (4.9.x do Dev-C++).
+
+
+------------------------------------------------------------
+  9. ESTRUTURA DE FICHEIROS
+------------------------------------------------------------
+
+  gestor-filas/
+  |
+  +-- 02-RELATORIO/
+  |   +-- README.md
+  |
+  +-- 03-CODIGO/
+  |   +-- fila_simples.cpp
+  |
+  +-- 04-EXERCICIOS/
+  |   +-- EXERCICIOS.txt
+  |
+  +-- 05-DOCUMENTACAO/
+  |   +-- DOCUMENTACAO.txt
+  |
+  +-- atendimentos.txt         (gerado automaticamente)
+
+
+============================================================
+  FIM DA DOCUMENTACAO
+============================================================
