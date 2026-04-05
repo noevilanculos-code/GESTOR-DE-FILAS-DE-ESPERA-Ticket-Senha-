@@ -1,6 +1,6 @@
  GESTRO-FILA-ESPERA-TICKET-SENHA
 
-Sistema de **filas de espera em modo terminal**, implementado em **C++17** com **OOP** (classes, std::vector, streams).  
+Sistema de **filas de espera em modoterminal**, implementado em **C++17** com **OOP** (classes, std::vector, streams).  
 Permite gerenciar a emissão de senhas, chamada de clientes e estatísticas diárias.
 
 
